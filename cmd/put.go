@@ -30,7 +30,7 @@ import (
 type DataPoint struct {
 	Metric string  `json:"metric"`
 	Timestamp int  `json:"timestamp"`
-	Value int  `json:"value"`
+	Value float32  `json:"value"`
 	Tags map[string]string  `json:"tags"`
 }
 
@@ -44,21 +44,27 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Args: cobra.ExactArgs(4),
+	Args: cobra.MinimumNArgs(4),
 	Run: func(cmd *cobra.Command, args []string) {
 	//	fmt.Println("put called")
 		timestamp, err := strconv.Atoi(args[1])
 		if err != nil {
 			panic(err)
 		}
-		value, err := strconv.Atoi(args[2])
+		value, err := strconv.ParseFloat(args[2], 32)
 		if err != nil {
 			panic(err)
 		}
 
-		tags := strings.Split(args[3], "=")
+		tagMap := make(map[string]string)
+		for _, a := range args[3:] {
+			tags := strings.Split(a, "=")
+			tagMap[tags[0]] = tags[1]
+		}
 
-		dataPoint := DataPoint{args[0], timestamp, value, map[string]string{tags[0]: tags[1]}}
+//		tags := strings.Split(args[3], "=")
+
+		dataPoint := DataPoint{args[0], timestamp, float32(value), tagMap}
 		dbytes, err := json.Marshal(dataPoint)
 //		fmt.Printf("%s\n", dbytes)
 		buff := bytes.NewBuffer(dbytes)
@@ -77,14 +83,17 @@ to quickly create a Cobra application.`,
 //        println(str)
 		}
 
-		var indentedJSON bytes.Buffer
+		if len(respBody) == 0 {
+			fmt.Printf("OK\n")
+		} else {
+			var indentedJSON bytes.Buffer
 
-		err = json.Indent(&indentedJSON, respBody, "", "\t")
-		if err != nil {
-			panic(err)
+			err = json.Indent(&indentedJSON, respBody, "", "\t")
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("%s\n", indentedJSON.Bytes())
 		}
-		fmt.Printf("%s\n", indentedJSON.Bytes())
-
 	},
 }
 
